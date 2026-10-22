@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/chat.js": { "maxDuration": 45 }
+  },
+  "headers": [
+    { "source": "/privacy.html", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] },
+    { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] }
+  ]
+}
+
