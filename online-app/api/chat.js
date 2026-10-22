@@ -167,7 +167,15 @@ module.exports = async function handler(req, res) {
 
     const payload = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
-      if (upstream.status === 429) return send(res, 429, { error: "الخدمة مشغولة الآن. حاول مرة أخرى بعد قليل." });
+      if (upstream.status === 429) {
+        const errorCode = payload.error && payload.error.code;
+        const errorMessage = payload.error && typeof payload.error.message === "string" ? payload.error.message.toLowerCase() : "";
+        const quotaProblem = ["insufficient_quota", "billing_hard_limit_reached"].includes(errorCode) || /quota|billing|usage limit/.test(errorMessage);
+        if (quotaProblem) {
+          return send(res, 429, { error: "رصيد OpenAI API أو حد الإنفاق غير كافٍ حاليًا. راجع Usage وBilling وLimits في منصة OpenAI، ثم أعد المحاولة." });
+        }
+        return send(res, 429, { error: "تجاوزت الخدمة حد الطلبات مؤقتًا. انتظر دقيقة ثم أعد المحاولة. إذا تكرر الخطأ، راجع Usage وLimits في منصة OpenAI." });
+      }
       if (upstream.status === 401 || upstream.status === 403) {
         return send(res, 503, { error: "مفتاح خدمة الذكاء الاصطناعي غير مفعّل أو غير صالح." });
       }
@@ -180,4 +188,5 @@ module.exports = async function handler(req, res) {
     return send(res, 502, { error: "تعذر الاتصال بالخدمة الآن. تحقق من اتصالك وحاول مرة أخرى." });
   }
 };
+
 
